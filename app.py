@@ -1,5 +1,6 @@
 import streamlit as st
-from google.cloud import firestore
+import sqlite3
+from datetime import datetime
 import base64
 
 # --- 1. SAYFA VE ARKA PLAN AYARLARI ---
@@ -24,40 +25,113 @@ def set_png_as_page_bg(png_file):
             background-repeat: no-repeat;
             background-attachment: fixed;
         }}
-        /* Yazıların fotoğraf üzerinde okunabilmesi için şeffaf kutu ayarı */
-        .stMarkdown, .stSubheader, .stTitle, p {{
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        /* Yazıların fotoğraf üzerinde okunabilmesi için gölge ayarı */
+        .stMarkdown, .stSubheader, .stTitle, p, h1, h2, h3, h4, span, label {{
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8) !important;
+        }}
+        /* WhatsApp Sohbet Balonları Tasarımı */
+        .chat-bubble-container {{
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+            width: 100%;
+        }}
+        .bubble {{
+            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 14px;
+            max-width: 75%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 15px;
+            line-height: 1.4;
+            box-shadow: 0px 1px 1px rgba(0,0,0,0.2);
+            text-shadow: none !important;
+        }}
+        .bubble-sender {{
+            background-color: #dcf8c6;
+            color: #111b21;
+            align-self: flex-end;
+            text-align: left;
+            border-bottom-right-radius: 2px;
+        }}
+        .bubble-receiver {{
+            background-color: #f0f2f5;
+            color: #111b21;
+            align-self: flex-start;
+            text-align: left;
+            border-bottom-left-radius: 2px;
+        }}
+        .bubble-title {{
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 2px;
+            display: block;
+        }}
+        .bubble-sender .bubble-title {{ color: #008069; }}
+        .bubble-receiver .bubble-title {{ color: #53bdeb; }}
+        .bubble-time {{
+            font-size: 10px;
+            color: #667781;
+            float: right;
+            margin-top: 5px;
+            margin-left: 10px;
+        }}
+        /* Alt kısımdaki giriş kutusunun gölgesini sıfırlama */
+        div[data-testid="stChatInput"] {{
+            text-shadow: none !important;
         }}
         </style>
         '''
         st.markdown(page_bg_img, unsafe_allow_html=True)
     except FileNotFoundError:
-        # Fotoğraf henüz klasörde yoksa uygulamanın çökmesini engeller
         pass
 
 # Arka planı yükle
 set_png_as_page_bg(IMAGE_FILE)
 
 
-# --- 2. FIREBASE BAĞLANTISI ---
-@st.cache_resource
-def get_db():
-    try:
-        return firestore.Client.from_service_account_json("firebase_key.json")
-    except Exception as e:
-        return None
+# --- 2. SQLITE VERİTABANI SİSTEMİ ---
+DB_NAME = "chat.db"
 
-db = get_db()
+def init_db():
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user TEXT NOT NULL,
+                text TEXT NOT NULL,
+                timestamp DATETIME NOT NULL
+            )
+        """)
+        conn.commit()
 
-if db is None:
-    st.error("Firebase bağlantı dosyası (firebase_key.json) bulunamadı! Lütfen klasöre ekleyin.")
-    st.stop()
+def save_message(user, text):
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO messages (user, text, timestamp) VALUES (?, ?, ?)",
+            (user, text, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        )
+        conn.commit()
+
+def get_last_50_messages():
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT user, text, timestamp FROM messages ORDER BY timestamp DESC LIMIT 50"
+        )
+        rows = cursor.fetchall()
+        return rows[::-1] # Eskiden yeniye sıralama
+
+init_db()
 
 
-# --- 3. ÖZEL GİRİŞ SİSTEMİ ---
+# --- 3. GİRİŞ SİSTEMİ ---
 USER_CREDENTIALS = {
-    "bennur": "alperen",    # Kız arkadaşının giriş bilgileri
-    "alperen": "bennur"         # Senin giriş bilgilerin
+    "bennur": "alperen",
+    "alperen": "bennur"
 }
 
 if "logged_in" not in st.session_state:
@@ -65,7 +139,7 @@ if "logged_in" not in st.session_state:
     st.session_state.username = ""
 
 if not st.session_state.logged_in:
-    st.title("❤️ Bizim Odamız'a Giriş")
+    st.title("❤️ Keje Giriş")
     username = st.text_input("Kullanıcı Adı:").lower().strip()
     password = st.text_input("Şifre:", type="password")
     
@@ -79,21 +153,17 @@ if not st.session_state.logged_in:
     st.stop()
 
 
-# --- 4. GİRİŞ BAŞARILI OLMUŞSA ÇALIŞACAK KISIM ---
-
-# Yan Menüye (Sidebar) Müzik ve Çıkış Butonunu Koyuyoruz
+# --- 4. GİRİŞ SONRASI SIDEBAR VE BAŞLIK ---
 with st.sidebar:
     st.write(f"❤️ Kullanıcı: **{st.session_state.username.capitalize()}**")
     st.write("---")
-    
-    # Giriş yapıldığı an burada müzik çalar görünecek ve otomatik oynatmayı tetikleyecek
     st.write("🎵 Arka Plan Müziği")
     try:
         with open("kafa.mp3", "rb") as f:
             audio_bytes = f.read()
         st.audio(audio_bytes, format="audio/mp3", autoplay=True, loop=True)
     except FileNotFoundError:
-        st.warning("kafa.mp3 dosyası klasörde bulunamadı, müzik yüklenemedi.")
+        st.warning("kafa.mp3 dosyası klasörde bulunamadı.")
 
     st.write("---")
     if st.button("Çıkış Yap"):
@@ -101,68 +171,57 @@ with st.sidebar:
         st.session_state.username = ""
         st.rerun()
 
-# Ana Sayfa Başlığı
-st.title(f"💬 Hoş geldin, {st.session_state.username.capitalize()}! ❤️")
-st.caption("✨ İkinize özel gizli mesajlaşma odası.")
-
-
-# --- 5. MESAJ GÖNDERME SİSTEMİ ---
-def send_message(text):
-    if text.strip():
-        db.collection("messages").add({
-            "user": st.session_state.username,
-            "text": text,
-            "timestamp": firestore.SERVER_TIMESTAMP
-        })
-
-with st.form(key="message_form", clear_on_submit=True):
-    user_msg = st.text_input("Mesajını yaz...", placeholder="Seni seviyorum...")
-    submit_btn = st.form_submit_button("Gönder ✨")
-    
-    if submit_btn and user_msg:
-        send_message(user_msg)
-        st.rerun()
-
+st.title(f"💬 Hi bitch, {st.session_state.username.capitalize()}! ❤️")
+st.caption("✨ ozeloda.")
 st.write("---")
 
 
-# --- 6. MESAJLARI EKRENA YAZDIRMA ---
-st.subheader("Mesaj Geçmişi")
-
-messages_ref = db.collection("messages").order_by("timestamp", direction=firestore.Query.DESCENDING).limit(50)
-messages = messages_ref.stream()
-
-for msg in messages:
-    data = msg.to_dict()
-    sender = data.get("user", "Bilinmeyen")
-    text = data.get("text", "")
-    time = data.get("timestamp")
+# --- 5. OTOMATİK YENİLENEN MESAJ ALANI ---
+# st.fragment sayesinde sadece bu alan 3 saniyede bir veritabanını kontrol edip güncellenir.
+@st.fragment(run_every=3)
+def show_messages_live():
+    messages = get_last_50_messages()
     
-    time_str = time.strftime("%H:%M") if time else ""
-    
-    if sender == st.session_state.username:
-        # Senin veya o an giriş yapanın mesajları (Sağda, Yeşil Balon)
-        st.markdown(
-            f"""
-            <div style='text-align: right; margin-bottom: 10px;'>
-                <div style='background-color: #dcf8c6; color: black; display: inline-block; padding: 10px; border-radius: 15px; max-width: 70%; text-align: left;'>
-                    <b>Sen</b> <small style='color: gray; font-size: 10px;'>{time_str}</small><br>{text}
+    for sender, text, msg_time in messages:
+        try:
+            time_str = datetime.strptime(msg_time, "%Y-%m-%d %H:%M:%S").strftime("%H:%M")
+        except ValueError:
+            time_str = msg_time
+        
+        if sender == st.session_state.username:
+            st.markdown(
+                f"""
+                <div class="chat-bubble-container">
+                    <div class="bubble bubble-sender">
+                        <span class="bubble-title">Sen</span>
+                        {text}
+                        <span class="bubble-time">{time_str}</span>
+                    </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True
-        )
-    else:
-        # Karşı tarafın mesajları (Solda, Gri Balon)
-        st.markdown(
-            f"""
-            <div style='text-align: left; margin-bottom: 10px;'>
-                <div style='background-color: #f0f2f5; color: black; display: inline-block; padding: 10px; border-radius: 15px; max-width: 70%;'>
-                    <b>{sender.capitalize()}</b> <small style='color: gray; font-size: 10px;'>{time_str}</small><br>{text}
+                """, unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                f"""
+                <div class="chat-bubble-container">
+                    <div class="bubble bubble-receiver">
+                        <span class="bubble-title">{sender.capitalize()}</span>
+                        {text}
+                        <span class="bubble-time">{time_str}</span>
+                    </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True
-        )
+                """, unsafe_allow_html=True
+            )
 
-# Manuel yenileme butonu
-if st.button("Mesajları Yenile 🔄"):
-    st.rerun()
+# Mesajları yukarıya yerleştiriyoruz
+show_messages_live()
+
+
+# --- 6. EN ALTTA SABİT SOHBET GİRİŞİ ---
+# st.chat_input, yapısı gereği sayfanın en altına yapışık durur.
+user_msg = st.chat_input("Seni seviyorum...")
+
+if user_msg:
+    if user_msg.strip():
+        save_message(st.session_state.username, user_msg.strip())
+        st.rerun()
