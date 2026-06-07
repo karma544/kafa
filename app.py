@@ -3,7 +3,7 @@ from google.cloud import firestore
 import base64
 
 # --- 1. SAYFA VE ARKA PLAN AYARLARI ---
-st.set_page_config(page_title="Bizim Odamız ❤️", page_icon="💬", layout="centered")
+st.set_page_config(page_title="B ❤️", page_icon="💬", layout="centered")
 
 IMAGE_FILE = "arkaplan.jpg" 
 
