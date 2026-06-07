@@ -4,7 +4,7 @@ from datetime import datetime
 import base64
 
 # --- 1. SAYFA VE ARKA PLAN AYARLARI ---
-st.set_page_config(page_title="Kancalarijaaa ❤️", page_icon="💬", layout="centered")
+st.set_page_config(page_title="Kancalarija ❤️", page_icon="💬", layout="centered")
 
 IMAGE_FILE = "arkaplan.jpg" 
 
@@ -36,40 +36,23 @@ def set_png_as_page_bg(png_file):
 
 set_png_as_page_bg(IMAGE_FILE)
 
-
-# --- 2. FIREBASE BAĞLANTISI (PRO RAW-STRING FORMATI) ---
+# --- 2. FIREBASE BAĞLANTISI (KASADAN ÇEKİLİYOR) ---
 @st.cache_resource
 def get_db():
-    # private_key değerinin başına r koyarak ham metin olarak kilitledik
-    raw_key = r"-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCnO7Y2ThPX7Dzp\nnugtKPsfFlyZdfulm6Ctufpf4+rr4t/p4du9X4TYvHpktUUIF8cddiUKkYsu4Med\nzbu+UlfIQ0AV3Br4/g9gbzT/e0x2spS4nVqF7aDPx0jZisp5O/cPt1M716MQSfbk\ntaQ2rtoeJND8NvrvM1KoOPoglN1US8gQjg8C3IUgz84REBxzGwP2amcIJoY59p2Q\nUxR8weG3LZdjPlmnF9oAkLPZbfl4oSPuq/15lMGSP7ZqH/VBMUiRcnS7RKwauvFs\nclXalIMGriMOZSo9SN+u5clRlackTvvZAfkZQbYabFLeJQnjA57JLZkEkSvV/Dp6\nfUySWzNLAgMBAAECggEABuuBwtgS0UZZ9AzV/vBkwFr9z+6vdKFKGz0Rk6A1LaVS\n934qEXAj+9fx4k5dWMH0RJiJpdkFWl9gwzJ0CH3wEWKjlPGyiAdg/hSy0Epo1gNo\nTOGk2kkEhutd/1guwF+BkBdZeoEoNTUO4jAqi88B3Gm+cly9xJj8XHld87Uwq/bw\niM4W5F9c2EC24ZsKIARcIziY6vq0pO45XFoJEPtGTbm/fS35ZLXI7huSaeANsTtt\nbwYQ5gai4AK2wQsoCF5hrioYhVzpZpoVT7td4FKxz3iAChCb7zqSAGSsUmj8lhnP\nm18swhoy5kRUlS9ReG/dVDIamdI+50SQhqExFjNA4QKBgQDSa4MxfER1cPZwh9SM\nCyCVEir6gLTG8dFsm8/ZDE6a6i9nV5xd1LUdeTEYY0dpUZi8MMn79tphqEBVRAnv\nbwA1ytLLFOCo5vQXKVyStmSp5bzt35CBSLE9V6oNmCpx3ypTKkDJkKy/wK+fLUQz\ngGi9iwdPz1m7GLF9wGzFJrphOwKBgQDLdVoVDpLgL5nLXFwMudhMtE3QSF3WWY3o\nVX3hHC+lRLbsFYcsghoHPIwusnt0zao5r43jnhgVP/Q/vZEBbdh3o2EsJhLIfaIL\nb2Ao4VMZzeGR8ENWbKmI81Wqk3e8l2HbnVMdvyLDyfiGgWd/i+ux8Us6qe/NmCKO\nQASpTNJVMQKBgQCc8UWj9izVb5DP8++rGG2P4kIeHzs2m4x5Nmm7WLuUPhFnQehF\n7+26cvcUWpAb1JlX3Af7H25YonaBYkMKy77bYFEC2aqLL99lGxuJ7fJ86faVcUdF\ntmND/ou+of0ee7YE26IA9SBz0RLsZYXV5/O3U+f7NguWSd+wjIJUNgOTmwKBgQCg\nObOOX6LFUFdCcmK/VuADT/7zpvnXI0GBFUqDq+nNsjaH51BDedW7mzAeWkqlKo4C\nzcDk3wzCN1JHnCcExBez6ANPfFBQebfSX4yPxRrneF5KyraM6hf9FPyCz419BI55\nIAVjqLFdFMJWUrRKGsurn4WKFmgWNdgIxFunZCtEEQKBgDsgFR282I8KKqCioH2A\nh4ayyRzKA3KQqnXjDP4OmwksdyT/7h+13Lpg3ax7iV83D1N/xTVNo61JlM9lNulO\nJ+3gnHAPhWsRgt7sTtRHBo0u/Nk4nyeU7k1RTxqIGgQcqoAvPIwu32eNn3JHrX0S\nGExvtzQml+j2tnSq3ha5ODP4\n-----END PRIVATE KEY-----\n"
-    
-    # Sunucunun anlayacağı gerçek satır başlarına çeviriyoruz
-    fixed_key = raw_key.replace(r"\n", "\n")
-    
-    firebase_info = {
-        "type": "service_account",
-        "project_id": "kafa-11312",
-        "private_key_id": "7d51aaef32a9ee733545209628a728c68264cb01",
-        "private_key": fixed_key,
-        "client_email": "firebase-adminsdk-fbsvc@kafa-11312.iam.gserviceaccount.com",
-        "client_id": "103935323611794625062",
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40kafa-11312.iam.gserviceaccount.com",
-        "universe_domain": "googleapis.com"
-    }
     try:
+        # Streamlit ayarlarındaki 'Secrets' kasasından bilgileri çekiyoruz
+        firebase_info = dict(st.secrets["firebase"])
+        # Bulut sunucusu için şifreyi okunabilir hale getiriyoruz
+        firebase_info["private_key"] = firebase_info["private_key"].replace("\\n", "\n")
         return firestore.Client.from_service_account_info(firebase_info)
     except Exception as e:
-        st.error(f"Firebase bağlantı hatası: {e}")
+        st.error(f"Firebase'e bağlanılamadı. Hata: {e}")
         return None
 
 db = get_db()
 
 if db is None:
-    st.stop()
-
+    st.stop() # Bağlantı koparsa kod burada durur, aşağıya inmez.
 
 # --- 3. ÖZEL GİRİŞ SİSTEMİ ---
 USER_CREDENTIALS = {
@@ -95,7 +78,6 @@ if not st.session_state.logged_in:
             st.error("Kullanıcı adı veya şifre hatalı!")
     st.stop()
 
-
 # --- 4. GİRİŞ BAŞARILI OLMUŞSA ÇALIŞACAK KISIM ---
 with st.sidebar:
     st.write(f"❤️ Kullanıcı: **{st.session_state.username.capitalize()}**")
@@ -117,10 +99,9 @@ with st.sidebar:
 st.title(f"💬 Hi bitch, {st.session_state.username.capitalize()}! ❤️")
 st.caption("selam ben yazi yazmasini ogrendim")
 
-
 # --- 5. MESAJ GÖNDERME SİSTEMİ ---
 st.subheader("Mesaj Gönder")
-user_msg = st.text_input("Mesajını yaz ve Gönder'e bas...", placeholder="Seni seviyorum...", key="msg_input")
+user_msg = st.text_input("Mesajını yaz...", placeholder="Seni seviyorum...", key="msg_input")
 
 if st.button("Gönder ✨"):
     if user_msg.strip():
@@ -133,7 +114,6 @@ if st.button("Gönder ✨"):
         st.rerun()
 
 st.write("---")
-
 
 # --- 6. MESAJLARI EKRANA YAZDIRMA ---
 st.subheader("Mesaj Geçmişi")
