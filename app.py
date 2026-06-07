@@ -4,7 +4,7 @@ from datetime import datetime
 import base64
 
 # --- 1. SAYFA VE ARKA PLAN AYARLARI ---
-st.set_page_config(page_title="Bizim Odamız ❤️", page_icon="💬", layout="centered")
+st.set_page_config(page_title="Kancalarija ❤️", page_icon="💬", layout="centered")
 
 IMAGE_FILE = "arkaplan.jpg" 
 
@@ -35,7 +35,7 @@ def set_png_as_page_bg(png_file):
     except FileNotFoundError:
         pass
 
-# Arka plan fotoğrafını yükle
+# Arka planı yükle
 set_png_as_page_bg(IMAGE_FILE)
 
 
@@ -50,14 +50,14 @@ def get_db():
 db = get_db()
 
 if db is None:
-    st.error("Firebase bağlantı dosyası (firebase_key.json) bulunamadı! Lütfen hem bilgisayarınıza hem GitHub'a ekleyin.")
+    st.error("Firebase bağlantı dosyası (firebase_key.json) bulunamadı! Lütfen klasöre ekleyin.")
     st.stop()
 
 
 # --- 3. ÖZEL GİRİŞ SİSTEMİ ---
 USER_CREDENTIALS = {
-    "sofia": "sevgilim123",    # Kız arkadaşının giriş bilgileri
-    "alper": "love321"         # Senin giriş bilgilerin
+    "bennur": "alperen",     # Kız arkadaşının giriş bilgileri
+    "alperen": "bennur"      # Senin giriş bilgilerin
 }
 
 if "logged_in" not in st.session_state:
@@ -65,7 +65,7 @@ if "logged_in" not in st.session_state:
     st.session_state.username = ""
 
 if not st.session_state.logged_in:
-    st.title("❤️ Bizim Odamız'a Giriş")
+    st.title("❤️ Kancalarija'a Giriş")
     username = st.text_input("Kullanıcı Adı:").lower().strip()
     password = st.text_input("Şifre:", type="password")
     
@@ -81,19 +81,18 @@ if not st.session_state.logged_in:
 
 # --- 4. GİRİŞ BAŞARILI OLMUŞSA ÇALIŞACAK KISIM ---
 
-# Yan Menü (Sidebar) Ayarları: Müzik ve Çıkış Butonu
+# Yan Menüye Müzik ve Çıkış Butonunu Koyuyoruz
 with st.sidebar:
     st.write(f"❤️ Kullanıcı: **{st.session_state.username.capitalize()}**")
     st.write("---")
     
-    # Giriş yapıldığı an müzik çalar görünür ve otomatik oynatmayı tetikler
     st.write("🎵 Arka Plan Müziği")
     try:
         with open("kafa.mp3", "rb") as f:
             audio_bytes = f.read()
         st.audio(audio_bytes, format="audio/mp3", autoplay=True, loop=True)
     except FileNotFoundError:
-        st.warning("kafa.mp3 dosyası sunucuda bulunamadı, müzik yüklenemedi.")
+        st.warning("kafa.mp3 dosyası klasörde bulunamadı, müzik yüklenemedi.")
 
     st.write("---")
     if st.button("Çıkış Yap"):
@@ -101,15 +100,15 @@ with st.sidebar:
         st.session_state.username = ""
         st.rerun()
 
-# Ana Ekran Başlıkları
-st.title(f"💬 Hoş geldin, {st.session_state.username.capitalize()}! ❤️")
-st.caption("✨ İkinize özel gizli mesajlaşma odası.")
+# Ana Sayfa Başlıkları (Senin yazdığın yeni metinler)
+st.title(f"💬 Hi bitch, {st.session_state.username.capitalize()}! ❤️")
+st.caption("selam ben yazi yazmasini ogrendim")
 
 
 # --- 5. MESAJ GÖNDERME SİSTEMİ (SUNUCU UYUMLU) ---
 st.subheader("Mesaj Gönder")
 
-# Sayfa yenilemelerinde takılmayan kararlı girdi alanı
+# İnternet sunucusunda takılma yapmayan kararlı text_input yapısı
 user_msg = st.text_input("Mesajını yaz ve Gönder'e bas...", placeholder="Seni seviyorum...", key="msg_input")
 
 if st.button("Gönder ✨"):
@@ -127,7 +126,7 @@ if st.button("Gönder ✨"):
 st.write("---")
 
 
-# --- 6. MESAJLARI EKRANA YAZDIRMA (SUNUCU UYUMLU) ---
+# --- 6. MESAJLARI EKRENA YAZDIRMA (SUNUCU UYUMLU) ---
 st.subheader("Mesaj Geçmişi")
 
 messages_ref = db.collection("messages").order_by("timestamp", direction=firestore.Query.DESCENDING).limit(50)
@@ -141,14 +140,14 @@ try:
         text = data.get("text", "")
         time = data.get("timestamp")
         
-        # Zamanı güvenli bir şekilde string'e çeviriyoruz
+        # Zaman damgasını güvenli bir şekilde string'e çeviriyoruz
         if time:
             time_str = time.strftime("%H:%M")
         else:
             time_str = datetime.now().strftime("%H:%M")
         
         if sender == st.session_state.username:
-            # Senin mesajların (Sağda, Yeşil Balon)
+            # Senin veya o an giriş yapanın mesajları (Sağda, Yeşil Balon)
             st.markdown(
                 f"""
                 <div style='text-align: right; margin-bottom: 10px;'>
@@ -159,7 +158,7 @@ try:
                 """, unsafe_allow_html=True
             )
         else:
-            # Karşı tarafın mesajları (Solda, Beyaz/Gri Balon)
+            # Karşı tarafın mesajları (Solda, Gri Balon)
             st.markdown(
                 f"""
                 <div style='text-align: left; margin-bottom: 10px;'>
@@ -172,6 +171,6 @@ try:
 except Exception as e:
     st.error(f"Mesajlar yüklenirken bir hata oluştu: {e}")
 
-# Sayfayı el ile güncellemek için yenileme butonu
+# Manuel yenileme buronu
 if st.button("Mesajları Yenile 🔄"):
     st.rerun()
